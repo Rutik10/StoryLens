@@ -14,7 +14,7 @@ from fastapi import WebSocket
 
 logger = logging.getLogger(__name__)
 
-LIVE_MODEL = "gemini-2.0-flash-live-001"
+LIVE_MODEL = "gemini-2.0-flash-live-preview-04-09"
 
 
 SYSTEM_PROMPT_TEMPLATE = """You are a documentary narrator who just created an extraordinary story about {object_name}.
@@ -50,15 +50,21 @@ async def run_live_session(websocket: WebSocket, object_name: str, facts: str) -
     from google import genai
     from google.genai import types
 
-    api_key = os.getenv("GOOGLE_API_KEY")
-    if not api_key:
-        await websocket.send_text(json.dumps({
-            "type": "error",
-            "message": "GOOGLE_API_KEY not configured"
-        }))
-        return
-
-    client = genai.Client(api_key=api_key, http_options={"api_version": "v1alpha"})
+    if os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "").lower() == "true":
+        client = genai.Client(
+            vertexai=True,
+            project=os.getenv("GOOGLE_CLOUD_PROJECT"),
+            location=os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1"),
+        )
+    else:
+        api_key = os.getenv("GOOGLE_API_KEY")
+        if not api_key:
+            await websocket.send_text(json.dumps({
+                "type": "error",
+                "message": "Set GOOGLE_API_KEY or GOOGLE_GENAI_USE_VERTEXAI=true"
+            }))
+            return
+        client = genai.Client(api_key=api_key, http_options={"api_version": "v1alpha"})
 
     system_prompt = SYSTEM_PROMPT_TEMPLATE.format(
         object_name=object_name,

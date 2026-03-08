@@ -9,7 +9,7 @@ const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
 const STEPS = [
   { id: "identify", label: "Identifying object..." },
   { id: "facts", label: "Fetching surprising facts..." },
-  { id: "script", label: "Writing cinematic script..." },
+  { id: "script", label: "Writing script + generating video (this takes 5–10 min)..." },
   { id: "veo", label: "Generating scenes with Veo 3.1..." },
   { id: "stitch", label: "Stitching final video..." },
 ];

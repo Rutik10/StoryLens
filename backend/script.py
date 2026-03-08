@@ -12,7 +12,7 @@ from google.genai import types
 
 logger = logging.getLogger(__name__)
 
-SCRIPT_MODEL = "gemini-2.0-flash-exp"
+SCRIPT_MODEL = "gemini-2.0-flash"
 
 SCRIPT_PROMPT_TEMPLATE = """You are a cinematic documentary scriptwriter.
 Create a 5-scene script about: {object_name}
@@ -56,9 +56,15 @@ Make narration poetic, precise, and surprising. Each scene must feel like a diff
 
 
 def _get_client() -> genai.Client:
+    if os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "").lower() == "true":
+        return genai.Client(
+            vertexai=True,
+            project=os.getenv("GOOGLE_CLOUD_PROJECT"),
+            location=os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1"),
+        )
     api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
-        raise RuntimeError("GOOGLE_API_KEY not set in environment")
+        raise RuntimeError("Set GOOGLE_API_KEY or GOOGLE_GENAI_USE_VERTEXAI=true")
     return genai.Client(api_key=api_key)
 
 
