@@ -9,15 +9,13 @@ const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
 const STEPS = [
   { id: "identify", label: "Identifying object..." },
   { id: "facts", label: "Fetching surprising facts..." },
-  { id: "script", label: "Writing script + generating video (this takes 5–10 min)..." },
-  { id: "veo", label: "Generating scenes with Veo 3.1..." },
-  { id: "stitch", label: "Stitching final video..." },
+  { id: "script", label: "Writing funny story..." },
+  { id: "veo", label: "Generating video with Veo 3.1..." },
 ];
 
 export default function App() {
-  const [screen, setScreen] = useState("upload"); // upload | pipeline | video
+  const [screen, setScreen] = useState("upload");
   const [stepStatus, setStepStatus] = useState({});
-  const [veoProgress, setVeoProgress] = useState(0); // 0-5
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
@@ -29,7 +27,6 @@ export default function App() {
     async (file) => {
       setError(null);
       setStepStatus({});
-      setVeoProgress(0);
       setScreen("pipeline");
 
       try {
@@ -52,26 +49,20 @@ export default function App() {
         setStep("identify", "done");
         setStep("facts", "done");
 
-        // Step 3-5: Generate
+        // Step 3: Generate prompt + video
         setStep("script", "running");
 
         const genForm = new FormData();
         genForm.append("object_json", JSON.stringify(analyzeData.object));
         genForm.append("facts", analyzeData.facts);
 
-        // Simulate Veo progress during generation (steps 4-5 are slow)
-        let veoTick = 0;
-        const veoInterval = setInterval(() => {
-          veoTick++;
-          if (veoTick <= 5) setVeoProgress(veoTick);
-        }, 8000); // roughly 8s per scene
-
         const genRes = await fetch(`${API_BASE}/generate`, {
           method: "POST",
           body: genForm,
         });
 
-        clearInterval(veoInterval);
+        setStep("script", "done");
+        setStep("veo", "running");
 
         if (!genRes.ok) {
           const err = await genRes.json().catch(() => ({ detail: genRes.statusText }));
@@ -80,15 +71,10 @@ export default function App() {
 
         const genData = await genRes.json();
 
-        setStep("script", "done");
-
         if (genData.veo_available) {
-          setVeoProgress(5);
           setStep("veo", "done");
-          setStep("stitch", "done");
         } else {
           setStep("veo", "skipped");
-          setStep("stitch", "skipped");
         }
 
         setResult({
@@ -136,16 +122,14 @@ export default function App() {
     setResult(null);
     setError(null);
     setStepStatus({});
-    setVeoProgress(0);
   }, []);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans">
-      {/* Header */}
       <header className="border-b border-zinc-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-600" />
-          <span className="text-xl font-bold tracking-tight">OrdinaryEpic</span>
+          <span className="text-xl font-bold tracking-tight">StoryLens</span>
         </div>
         {screen !== "upload" && (
           <button
@@ -166,63 +150,39 @@ export default function App() {
 
         {screen === "upload" && <Upload onUpload={handleUpload} />}
         {screen === "pipeline" && (
-          <Pipeline steps={STEPS} stepStatus={stepStatus} veoProgress={veoProgress} />
+          <Pipeline steps={STEPS} stepStatus={stepStatus} />
         )}
         {screen === "video" && result && (
           <div className="space-y-8">
             {/* Object title */}
             <div>
-              <p className="text-xs uppercase tracking-widest text-amber-400 mb-1">
-                OrdinaryEpic
-              </p>
-              <h1 className="text-4xl font-bold leading-tight">
-                {result.object.object_name}
-              </h1>
+              <p className="text-xs uppercase tracking-widest text-amber-400 mb-1">StoryLens</p>
+              <h1 className="text-4xl font-bold leading-tight">{result.object.object_name}</h1>
               <p className="text-zinc-400 mt-1 text-sm">
                 {result.object.material} &middot; {result.object.estimated_age}
               </p>
             </div>
 
-            {/* Video or Script fallback */}
+            {/* Video or fallback */}
             {result.videoUrl ? (
               <VideoPlayer src={result.videoUrl} />
             ) : (
               <ScriptFallback script={result.script} message={result.message} />
             )}
 
-            {/* Facts */}
+            {/* Fact used */}
+            {result.script?.fact && (
+              <div className="bg-zinc-900 rounded-xl p-6 border border-amber-700/40">
+                <h2 className="text-lg font-semibold mb-2 text-amber-400">The Fact</h2>
+                <p className="text-sm text-zinc-200 leading-relaxed">{result.script.fact}</p>
+              </div>
+            )}
+
+            {/* All facts */}
             <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800">
-              <h2 className="text-lg font-semibold mb-4 text-amber-400">
-                5 Verified Surprising Facts
-              </h2>
+              <h2 className="text-lg font-semibold mb-4 text-amber-400">Surprising Facts</h2>
               <div className="space-y-3 text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
                 {result.facts}
-              </div>
-            </div>
-
-            {/* Script */}
-            <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800">
-              <h2 className="text-lg font-semibold mb-4 text-amber-400">
-                Cinematic Script — Myth-Bust-Blow Arc
-              </h2>
-              <div className="space-y-4">
-                {result.script.map((scene) => (
-                  <div key={scene.scene_number} className="flex gap-4">
-                    <div className="flex-none">
-                      <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-500/10 text-amber-400 text-xs font-bold">
-                        {scene.scene_number}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">
-                        {scene.emotional_beat.replace(/_/g, " ")}
-                      </p>
-                      <p className="text-sm text-zinc-200 italic leading-relaxed">
-                        "{scene.narration}"
-                      </p>
-                    </div>
-                  </div>
-                ))}
               </div>
             </div>
 
@@ -259,19 +219,9 @@ function ScriptFallback({ script, message }) {
         <div className="w-2 h-2 rounded-full bg-amber-400" />
         <p className="text-amber-400 text-sm">{message}</p>
       </div>
-      <div className="space-y-6">
-        {script.map((scene) => (
-          <div key={scene.scene_number} className="border-l-2 border-zinc-700 pl-4">
-            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">
-              Scene {scene.scene_number} — {scene.emotional_beat.replace(/_/g, " ")}
-            </p>
-            <p className="text-zinc-200 italic mb-2">"{scene.narration}"</p>
-            <p className="text-zinc-500 text-xs">
-              Shot: {scene.veo_json.shot.type} &middot; {scene.veo_json.shot.camera}
-            </p>
-          </div>
-        ))}
-      </div>
+      {script?.veo_prompt && (
+        <p className="text-zinc-300 text-sm leading-relaxed">{script.veo_prompt}</p>
+      )}
     </div>
   );
 }

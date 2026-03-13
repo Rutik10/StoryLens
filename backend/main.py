@@ -19,8 +19,6 @@ from dotenv import load_dotenv
 from vision import analyze_image
 from facts import fetch_facts
 from script import generate_script
-from veo import generate_all_scenes
-from stitch import stitch_clips
 from notion import save_to_notion
 from live import run_live_session
 
@@ -40,7 +38,7 @@ app.add_middleware(
 )
 
 OUTPUTS_DIR = Path(os.getenv("OUTPUTS_DIR", "./outputs"))
-OUTPUTS_DIR.mkdir(exist_ok=True)
+OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
 
 VEO_AVAILABLE = os.getenv("VEO_AVAILABLE", "true").lower() == "true"
 
@@ -151,29 +149,59 @@ async def generate(
         obj_data = json.loads(object_json)
         object_name = obj_data.get("object_name", "Object")
 
-        # Step 3: Script
-        script_scenes = await generate_script(obj_data, facts)
+        # Step 3: Generate veo prompt + pick best fact
+        script = await generate_script(obj_data, facts)
 
-        if not VEO_AVAILABLE:
-            # Fallback: return script + facts only
+        veo_prompt = (script.get("veo_prompt") or "").strip()
+        if not veo_prompt:
+            logger.warning("Empty Veo prompt generated; skipping video generation.")
             return JSONResponse({
                 "veo_available": False,
-                "script": script_scenes,
+                "script": script,
                 "facts": facts,
                 "video_url": None,
-                "message": "Veo 3.1 unavailable — showing script and facts only.",
+                "message": "Veo prompt was empty — showing script only.",
             })
 
-        # Step 4: Generate scenes in parallel
-        clip_paths = await generate_all_scenes(script_scenes, obj_data, str(OUTPUTS_DIR))
+        if not VEO_AVAILABLE:
+            return JSONResponse({
+                "veo_available": False,
+                "script": script,
+                "facts": facts,
+                "video_url": None,
+                "message": "Veo unavailable — showing script only.",
+            })
 
-        # Step 5: Stitch
-        final_path = await stitch_clips(clip_paths, str(OUTPUTS_DIR))
-        video_filename = Path(final_path).name
+        # Step 4: Generate 8-second video
+        from veo import generate_video
+        import time
+        timestamp = int(time.time())
+
+        # Save facts and prompt before generation
+        (OUTPUTS_DIR / f"facts_{timestamp}.txt").write_text(
+            f"OBJECT: {object_name}\n{'=' * 60}\n\n{facts}", encoding="utf-8"
+        )
+        (OUTPUTS_DIR / f"prompt_{timestamp}.txt").write_text(
+            f"FACT USED:\n{script['fact']}\n\n{'=' * 60}\n\nVEO PROMPT:\n{script['veo_prompt']}",
+            encoding="utf-8"
+        )
+
+        try:
+            final_path = await generate_video(veo_prompt, str(OUTPUTS_DIR))
+            video_filename = Path(final_path).name
+        except Exception as e:
+            logger.error(f"Veo generation failed: {e}", exc_info=True)
+            return JSONResponse({
+                "veo_available": False,
+                "script": script,
+                "facts": facts,
+                "video_url": None,
+                "message": f"Veo generation failed — showing script only. ({e})",
+            })
 
         return JSONResponse({
             "veo_available": True,
-            "script": script_scenes,
+            "script": script,
             "facts": facts,
             "video_url": f"/outputs/{video_filename}",
             "message": "Video generated successfully.",
@@ -182,6 +210,43 @@ async def generate(
     except Exception as e:
         logger.error(f"/generate error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/download-prompts")
+async def download_prompts(
+    object_json: str = Form(...),
+    script_json: str = Form(...),
+):
+    """Return a .txt file with the formatted Veo prompts for each scene."""
+    from veo import build_veo_prompt
+    from fastapi.responses import PlainTextResponse
+
+    obj_data = json.loads(object_json)
+    scenes = json.loads(script_json)
+    object_name = obj_data.get("object_name", "Object")
+
+    lines = [f"VEO PROMPTS — {object_name}", "=" * 60, ""]
+    for scene in scenes:
+        n = scene.get("scene_number", "?")
+        beat = scene.get("emotional_beat", "")
+        narration = scene.get("narration", "")
+        prompt = build_veo_prompt(scene, obj_data)
+        lines += [
+            f"SCENE {n} | {beat}",
+            f"Narration: {narration}",
+            f"Veo Prompt:",
+            prompt,
+            "",
+            "-" * 60,
+            "",
+        ]
+
+    content = "\n".join(lines)
+    filename = f"veo_prompts_{object_name.lower().replace(' ', '_')}.txt"
+    return PlainTextResponse(
+        content=content,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.post("/save")
