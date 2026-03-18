@@ -1,0 +1,21 @@
+FACT USED:
+The first stapler was hand-crafted for King Louis XIII of France in the 18th century — each staple was embossed with the royal insignia.
+
+============================================================
+
+ANCHOR PROMPT:
+A pristine, minimalist modern office desk is bathed in soft, natural light from a large window. A sleek, standard black stapler sits prominently. A single, well-manicured hand reaches into frame, picks up the stapler, and gently staples two blank sheets of paper with a satisfying, crisp click-thunk. The camera performs a slow, cinematic zoom into the stapler as the hand performs the action, emphasizing its understated design. Voiceover says: 'You think you know the stapler? This unassuming office titan wasn't born in a cubicle, but handcrafted for King Louis XIII of France in the 18th century – each staple embossed with a royal insignia.'
+
+============================================================
+
+EXTENSION PROMPTS:
+1. The scene transitions to a vast, brightly lit industrial workshop where faint sparks fly in the background. An impossibly colossal stapler, easily ten feet tall, made of raw, heavy-duty steel, is positioned over a stack of thick metal plates. A tiny, helmeted worker operates a massive lever. The giant stapler descends with a deafening CRUNCH, stapling several thick steel sheets together, with smoke briefly rising from the impact point. The camera uses a wide, low-angle shot to emphasize the stapler's immense scale, then dramatically close-ups on the steel plates being stapled under harsh industrial lighting, accompanied by loud machinery hum, heavy metallic clank, and the thunderous CRUNCH. Voiceover says: 'From monarchy, it evolved. We've gone from paper to stapling steel – the world's largest can bind 24 sheets of quarter-inch metal.'
+
+2. The scene shifts gracefully to the interior of the International Space Station (ISS), filled with floating equipment and bathed in cool, diffused internal lighting. A sleek, futuristic stapler, chrome-and-carbon-fiber, floats gently in zero gravity, equipped with small thruster vents. An astronaut, wearing a full spacesuit, carefully nudges a stack of loose, floating 'documents' (perhaps space menus or checklists). The astronaut then deftly uses the zero-gravity stapler, which emits a soft hiss of compressed nitrogen as a staple is fired, gently pushing the stapler back slightly due to the recoil. The stapled documents float away. The camera performs a slow, graceful pan following the stapler as it floats and is used, emphasizing the weightlessness amidst the quiet hum of the space station and the distinct hiss of the stapler. Voiceover says: 'And for truly out-of-this-world documents, NASA uses a zero-gravity variant, firing with compressed nitrogen.'
+
+3. The final scene remains in the ISS interior, but now looking out a large viewport at Earth, with a mix of internal lighting and harsh sunlight from space. The NASA zero-gravity stapler is now being wielded by the same astronaut, who is attempting to staple two small, tumbling meteors or asteroids that are also floating inside the ISS. The stapler appears stressed. With extreme concentration and mild exasperation, the astronaut tries repeatedly to staple the rocky meteors together. Each attempt results in a metallic clink and the stapler recoiling violently, failing to penetrate the rock but instead pushing the meteors into each other, creating tiny puffs of dust. The astronaut throws their hands up in defeat, and the stapler floats away, spinning uselessly towards the Earth viewport, ending the scene on the defeated astronaut and the drifting stapler. Voiceover says: 'Because even in space, those TPS reports won't staple themselves.'
+
+============================================================
+
+NARRATION SCRIPT:
+You think you know the stapler? This unassuming office titan wasn't born in a cubicle, but handcrafted for King Louis XIII of France in the 18th century – each staple embossed with a royal insignia. From monarchy, it evolved. We've gone from paper to stapling steel – the world's largest can bind 24 sheets of quarter-inch metal. And for truly out-of-this-world documents, NASA uses a zero-gravity variant, firing with compressed nitrogen. Because even in space, those TPS reports won't staple themselves.

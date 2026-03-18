@@ -172,8 +172,9 @@ async def generate(
                 "message": "Veo unavailable — showing script only.",
             })
 
-        # Step 4: Generate 8-second video
+        # Step 4: Generate long video + separate narration audio
         from veo import generate_video
+        from tts import synthesize_narration
         import time
         timestamp = int(time.time())
 
@@ -182,13 +183,33 @@ async def generate(
             f"OBJECT: {object_name}\n{'=' * 60}\n\n{facts}", encoding="utf-8"
         )
         (OUTPUTS_DIR / f"prompt_{timestamp}.txt").write_text(
-            f"FACT USED:\n{script['fact']}\n\n{'=' * 60}\n\nVEO PROMPT:\n{script['veo_prompt']}",
+            (
+                f"FACT USED:\n{script['fact']}\n\n"
+                f"{'=' * 60}\n\n"
+                f"ANCHOR PROMPT:\n{script['veo_prompt']}\n\n"
+                f"{'=' * 60}\n\n"
+                f"EXTENSION PROMPTS:\n"
+                + "\n\n".join(
+                    f"{idx + 1}. {prompt}"
+                    for idx, prompt in enumerate(script.get("extension_prompts") or [])
+                )
+                + f"\n\n{'=' * 60}\n\nNARRATION SCRIPT:\n{script.get('narration_script', '')}"
+            ),
             encoding="utf-8"
         )
 
         try:
-            final_path = await generate_video(veo_prompt, str(OUTPUTS_DIR))
+            final_path = await generate_video(
+                veo_prompt,
+                str(OUTPUTS_DIR),
+                extension_prompts=script.get("extension_prompts") or [],
+            )
             video_filename = Path(final_path).name
+            narration_path = await synthesize_narration(
+                script.get("narration_script") or facts,
+                str(OUTPUTS_DIR),
+            )
+            narration_filename = Path(narration_path).name
         except Exception as e:
             logger.error(f"Veo generation failed: {e}", exc_info=True)
             return JSONResponse({
@@ -204,6 +225,7 @@ async def generate(
             "script": script,
             "facts": facts,
             "video_url": f"/outputs/{video_filename}",
+            "audio_url": f"/outputs/{narration_filename}",
             "message": "Video generated successfully.",
         })
 

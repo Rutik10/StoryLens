@@ -12,7 +12,7 @@ from google.genai import types
 
 logger = logging.getLogger(__name__)
 
-VISION_MODEL = "gemini-2.0-flash"
+VISION_MODEL = os.getenv("VISION_MODEL", "gemini-2.5-flash")
 
 VISION_PROMPT = """Analyze this image and identify the main everyday object.
 Return ONLY a valid JSON object with these exact keys (no markdown, no explanation):

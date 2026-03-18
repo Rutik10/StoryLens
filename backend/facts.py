@@ -10,7 +10,7 @@ from google.genai import types
 
 logger = logging.getLogger(__name__)
 
-FACTS_MODEL = "gemini-2.0-flash"
+FACTS_MODEL = os.getenv("FACTS_MODEL", "gemini-2.5-flash")
 
 
 def _get_client() -> genai.Client:

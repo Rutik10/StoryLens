@@ -14,7 +14,7 @@ from fastapi import WebSocket
 
 logger = logging.getLogger(__name__)
 
-LIVE_MODEL = "gemini-2.0-flash-live-preview-04-09"
+LIVE_MODEL = os.getenv("LIVE_MODEL", "gemini-live-2.5-flash-native-audio")
 
 
 SYSTEM_PROMPT_TEMPLATE = """You are a documentary narrator who just created an extraordinary story about {object_name}.

@@ -1,60 +1,95 @@
 import { useRef, useState, useEffect } from "react";
 
-export default function VideoPlayer({ src }) {
+export default function VideoPlayer({ src, audioSrc }) {
   const videoRef = useRef(null);
+  const audioRef = useRef(null);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [muted, setMuted] = useState(false);
 
   useEffect(() => {
-    // Autoplay when src is ready
     const video = videoRef.current;
+    const audio = audioRef.current;
     if (!video) return;
-    video.play().catch(() => {
-      // Autoplay blocked — user must click
-    });
-  }, [src]);
+    video.play().then(() => {
+      if (audio) {
+        audio.currentTime = video.currentTime;
+        audio.play().catch(() => {});
+      }
+    }).catch(() => {});
+  }, [src, audioSrc]);
+
+  const syncAudioToVideo = () => {
+    const video = videoRef.current;
+    const audio = audioRef.current;
+    if (!video || !audio) return;
+    if (Math.abs(audio.currentTime - video.currentTime) > 0.35) {
+      audio.currentTime = video.currentTime;
+    }
+  };
 
   const toggle = () => {
-    const v = videoRef.current;
-    if (!v) return;
-    if (v.paused) {
-      v.play();
+    const video = videoRef.current;
+    const audio = audioRef.current;
+    if (!video) return;
+    if (video.paused) {
+      video.play();
+      if (audio) {
+        audio.currentTime = video.currentTime;
+        audio.play().catch(() => {});
+      }
       setPlaying(true);
     } else {
-      v.pause();
+      video.pause();
+      if (audio) audio.pause();
       setPlaying(false);
     }
   };
 
   const handleTimeUpdate = () => {
-    const v = videoRef.current;
-    if (!v || !v.duration) return;
-    setProgress((v.currentTime / v.duration) * 100);
+    const video = videoRef.current;
+    if (!video || !video.duration) return;
+    syncAudioToVideo();
+    setProgress((video.currentTime / video.duration) * 100);
   };
 
   const handleLoadedMetadata = () => {
-    const v = videoRef.current;
-    if (v) setDuration(v.duration);
+    const video = videoRef.current;
+    if (video) setDuration(video.duration);
   };
 
-  const handlePlay = () => setPlaying(true);
-  const handlePause = () => setPlaying(false);
+  const handlePlay = () => {
+    const video = videoRef.current;
+    const audio = audioRef.current;
+    if (audio && video) {
+      audio.currentTime = video.currentTime;
+      audio.play().catch(() => {});
+    }
+    setPlaying(true);
+  };
+
+  const handlePause = () => {
+    const audio = audioRef.current;
+    if (audio) audio.pause();
+    setPlaying(false);
+  };
 
   const handleSeek = (e) => {
-    const v = videoRef.current;
-    if (!v) return;
+    const video = videoRef.current;
+    const audio = audioRef.current;
+    if (!video) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const pct = (e.clientX - rect.left) / rect.width;
-    v.currentTime = pct * v.duration;
+    video.currentTime = pct * video.duration;
+    if (audio) audio.currentTime = video.currentTime;
   };
 
   const toggleMute = () => {
-    const v = videoRef.current;
-    if (!v) return;
-    v.muted = !v.muted;
-    setMuted(v.muted);
+    const audio = audioRef.current;
+    const nextMuted = !muted;
+    if (audio) audio.muted = nextMuted;
+    setMuted(nextMuted);
   };
 
   const formatTime = (s) => {
@@ -66,7 +101,8 @@ export default function VideoPlayer({ src }) {
 
   return (
     <div className="rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800 shadow-2xl shadow-black/50">
-      {/* Video element */}
+      <audio ref={audioRef} src={audioSrc || undefined} preload="auto" />
+
       <div className="relative group cursor-pointer" onClick={toggle}>
         <video
           ref={videoRef}
@@ -79,7 +115,6 @@ export default function VideoPlayer({ src }) {
           playsInline
         />
 
-        {/* Play/pause overlay */}
         <div
           className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200
             ${playing ? "opacity-0 group-hover:opacity-100" : "opacity-100"}
@@ -99,13 +134,8 @@ export default function VideoPlayer({ src }) {
         </div>
       </div>
 
-      {/* Controls */}
       <div className="px-4 py-3 space-y-2">
-        {/* Progress bar */}
-        <div
-          className="w-full h-1.5 bg-zinc-700 rounded-full cursor-pointer"
-          onClick={handleSeek}
-        >
+        <div className="w-full h-1.5 bg-zinc-700 rounded-full cursor-pointer" onClick={handleSeek}>
           <div
             className="h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full transition-all"
             style={{ width: `${progress}%` }}
@@ -114,7 +144,6 @@ export default function VideoPlayer({ src }) {
 
         <div className="flex items-center justify-between text-xs text-zinc-500">
           <div className="flex items-center gap-3">
-            {/* Play/pause button */}
             <button onClick={toggle} className="text-zinc-300 hover:text-white transition-colors">
               {playing ? (
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -127,7 +156,6 @@ export default function VideoPlayer({ src }) {
               )}
             </button>
 
-            {/* Mute button */}
             <button onClick={toggleMute} className="text-zinc-300 hover:text-white transition-colors">
               {muted ? (
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -149,6 +177,7 @@ export default function VideoPlayer({ src }) {
           </div>
 
           <div className="flex items-center gap-2">
+            {audioSrc && <span className="text-amber-400">Narration synced</span>}
             <a
               href={src}
               download="ordinaryepic_story.mp4"

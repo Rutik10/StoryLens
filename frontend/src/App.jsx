@@ -82,6 +82,7 @@ export default function App() {
           facts: analyzeData.facts,
           script: genData.script,
           videoUrl: genData.video_url ? `${API_BASE}${genData.video_url}` : null,
+          audioUrl: genData.audio_url ? `${API_BASE}${genData.audio_url}` : null,
           veoAvailable: genData.veo_available,
           message: genData.message,
         });
@@ -165,7 +166,7 @@ export default function App() {
 
             {/* Video or fallback */}
             {result.videoUrl ? (
-              <VideoPlayer src={result.videoUrl} />
+              <VideoPlayer src={result.videoUrl} audioSrc={result.audioUrl} />
             ) : (
               <ScriptFallback script={result.script} message={result.message} />
             )}
